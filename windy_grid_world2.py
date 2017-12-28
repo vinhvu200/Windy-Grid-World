@@ -21,38 +21,46 @@ def epsilon_greedy_policy(Q, state, nA, epsilon=0.05):
 
     return probs
 
-def Q_learning(episodes, learning_rate, discount=1.0):
-    '''
 
-    :param episodes: Number of episodes to run (int)
-    :param learning_rate: How fast it will converge to a point (float [0, 1])
-    :param discount: How much future events lose their value (float [0, 1])
-    :return: x,y points to graph
-    '''
+def q_learning_lambda(episodes, learning_rate, discount=1.0, _lambda=0.9):
 
     Q = defaultdict(lambda: np.zeros(env.action_space.n))
-    move_cost = 0.05
-
+    e = defaultdict(lambda: np.zeros(env.action_space.n))
     x = np.arange(episodes)
     y = np.zeros(episodes)
 
     for episode in range(episodes):
         state = env.reset()
 
+        probs = epsilon_greedy_policy(Q, state, env.action_space.n)
+        action = np.random.choice(len(probs), p=probs)
+
         for step in range(10000):
-            probs = epsilon_greedy_policy(Q, state, env.action_space.n)
-            action = np.random.choice(np.arange(len(probs)), p=probs)
-            Q[state][action] -= move_cost
             next_state, reward, done, _ = env.step(action)
 
-            td_target = reward + discount * np.amax(Q[next_state])
+            probs = epsilon_greedy_policy(Q, next_state, env.action_space.n)
+            next_action = np.random.choice(len(probs), p=probs)
+
+            best_next_action = np.argmax(Q[next_state])
+            td_target = reward + discount * Q[next_state][best_next_action]
             td_error = td_target - Q[state][action]
-            Q[state][action] += learning_rate * td_error
+
+            e[state][action] += 1
+
+            for s in Q:
+                for a in range(len(Q[s])):
+                    Q[s][a] += learning_rate * td_error * e[s][a]
+                    if next_action is best_next_action:
+                        e[s][a] = discount * _lambda * e[s][a]
+                    else:
+                        e[s][a] = 0
 
             if done:
                 y[episode] = step
+                e.clear()
                 break
 
+            action = next_action
             state = next_state
 
     return x, y
@@ -60,7 +68,7 @@ def Q_learning(episodes, learning_rate, discount=1.0):
 episodes = 300
 learning_rate = 0.5
 
-x, y = Q_learning(episodes, learning_rate)
+x, y = q_learning_lambda(episodes, learning_rate)
 
 fig, ax = plt.subplots()
 ax.plot(x, y)
@@ -69,6 +77,6 @@ ax.set(xlabel='Episodes', ylabel='steps',
        title='Episodes vs steps')
 ax.grid()
 
-fig.savefig("Q_learning.png")
+fig.savefig("Q_learning_lambda.png")
 
 plt.show()
