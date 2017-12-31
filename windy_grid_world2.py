@@ -23,6 +23,14 @@ def epsilon_greedy_policy(Q, state, nA, epsilon=0.05):
 
 
 def q_learning_lambda(episodes, learning_rate, discount=1.0, _lambda=0.9):
+    '''
+
+    :param episodes:
+    :param learning_rate:
+    :param discount:
+    :param _lambda:
+    :return: x, y points to plot
+    '''
 
     Q = defaultdict(lambda: np.zeros(env.action_space.n))
     e = defaultdict(lambda: np.zeros(env.action_space.n))

@@ -6,7 +6,7 @@ from collections import defaultdict
 env = WindyGridworldEnv()
 
 
-def epsilon_greedy_policy(Q, state, nA, epsilon=0.05):
+def epsilon_greedy_policy(Q, state, nA, epsilon):
     '''
 
     :param Q: links state -> action value (dictionary)
@@ -21,30 +21,37 @@ def epsilon_greedy_policy(Q, state, nA, epsilon=0.05):
 
     return probs
 
-def Q_learning(episodes, learning_rate, discount=1.0):
+
+def Q_learning(episodes, learning_rate, discount=1.0, epsilon=0.05):
     '''
 
     :param episodes: Number of episodes to run (int)
     :param learning_rate: How fast it will converge to a point (float [0, 1])
     :param discount: How much future events lose their value (float [0, 1])
+    :param epsilon: chance a random move is selected (float [0, 1])
     :return: x,y points to graph
     '''
 
+    # Links state to action values
     Q = defaultdict(lambda: np.zeros(env.action_space.n))
-    move_cost = 0.05
 
+    # Points to plot
+    # number of episodes
     x = np.arange(episodes)
+    # Number of steps
     y = np.zeros(episodes)
 
     for episode in range(episodes):
         state = env.reset()
 
         for step in range(10000):
-            probs = epsilon_greedy_policy(Q, state, env.action_space.n)
+
+            # Select and take action
+            probs = epsilon_greedy_policy(Q, state, env.action_space.n, epsilon)
             action = np.random.choice(np.arange(len(probs)), p=probs)
-            Q[state][action] -= move_cost
             next_state, reward, done, _ = env.step(action)
 
+            # TD Update
             td_target = reward + discount * np.amax(Q[next_state])
             td_error = td_target - Q[state][action]
             Q[state][action] += learning_rate * td_error
